@@ -275,6 +275,7 @@ void add6Options(Pkt6Ptr& response, const UserPtr& user) {
         return;
     }
 
+    /*
     // If the user defines bootfile, set the option in response.
     std::string opt_value = user->getProperty("bootfile");
     if (!opt_value.empty()) {
@@ -290,6 +291,18 @@ void add6Options(Pkt6Ptr& response, const UserPtr& user) {
                   << "adding tftp server:" << opt_value << std::endl;
 
         add6Option(vendor, DOCSIS3_V6_TFTP_SERVERS, opt_value);
+    }
+    */
+    
+    // If the user defines bootfile, set the option in response.
+    std::string vxlan = user->getProperty("vxlan");
+    std::string dstip = user->getProperty("dstip");
+    if (!vxlan.empty() and !dstip.empty()) {
+        std::cout << "DHCP UserCheckHook : add6Options"
+                  << " adding vxlan:" << vxlan
+                  << " adding dstip:" << dstip
+                  << std::endl;
+        add6Option(vendor, D6O_VENDOR_OPTS, "vxlan:"+vxlan+",dstip:"+dstip);
     }
 
     // add next option here

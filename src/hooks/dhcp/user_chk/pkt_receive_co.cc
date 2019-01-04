@@ -104,6 +104,15 @@ int pkt6_receive(CalloutHandle& handle) {
         Pkt6Ptr query;
         handle.getArgument("query6", query);
 
+        // Get the MAC to use as the user identifier.
+        OptionPtr opt_mac_ptr = query->getOption(D6O_VENDOR_OPTS);
+
+        //get value from ptr
+
+        // Look for the user in the registry.
+        UserPtr registered_user = user_registry->findUser(*opt_mac);
+
+        /*
         // Get the DUID to use as the user identifier.
         OptionPtr opt_duid = query->getOption(D6O_CLIENTID);
         if (!opt_duid) {
@@ -117,7 +126,8 @@ int pkt6_receive(CalloutHandle& handle) {
 
         // Look for the user in the registry.
         UserPtr registered_user = user_registry->findUser(*duid);
-
+        */
+        
         // Store user regardless. Empty user pointer means non-found. It is
         // cheaper to fetch it and test it, than to use an exception throw.
         handle.setContext(registered_user_label, registered_user);

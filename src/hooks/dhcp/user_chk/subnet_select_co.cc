@@ -64,11 +64,14 @@ int subnet4_select(CalloutHandle& handle) {
             Subnet4Ptr subnet;
             handle.getArgument("subnet4", subnet);
         } else {
-            // User is not in the registry, so assign them to the last subnet
-            // in the collection.  By convention we are assuming this is the
-            // restricted subnet.
-            Subnet4Ptr subnet = subnets->back();
-            handle.setArgument("subnet4", subnet);
+            // Do not provided unregisterd users with an IP
+            handle.setStatus(CalloutHandle::NEXT_STEP_DROP);
+            
+            //// User is not in the registry, so assign them to the last subnet
+            //// in the collection.  By convention we are assuming this is the
+            //// restricted subnet.
+            //Subnet4Ptr subnet = subnets->back();
+            //handle.setArgument("subnet4", subnet);
         }
     } catch (const std::exception& ex) {
         LOG_ERROR(user_chk_logger, USER_CHK_SUBNET4_SELECT_ERROR)
@@ -118,11 +121,14 @@ int subnet6_select(CalloutHandle& handle) {
             Subnet6Ptr subnet;
             handle.getArgument("subnet6", subnet);
         } else {
-            // User is not in the registry, so assign them to the last subnet
-            // in the collection.  By convention we are assuming this is the
-            // restricted subnet.
-            Subnet6Ptr subnet = subnets->back();
-            handle.setArgument("subnet6", subnet);
+            // Do not provided unregisterd users with an IP
+            handle.setStatus(CalloutHandle::NEXT_STEP_DROP);
+            
+            //// User is not in the registry, so assign them to the last subnet
+            //// in the collection.  By convention we are assuming this is the
+            //// restricted subnet.
+            //Subnet6Ptr subnet = subnets->back();
+            //handle.setArgument("subnet6", subnet);
         }
     } catch (const std::exception& ex) {
         LOG_ERROR(user_chk_logger, USER_CHK_SUBNET6_SELECT_ERROR)
