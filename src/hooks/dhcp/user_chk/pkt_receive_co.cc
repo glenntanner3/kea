@@ -12,6 +12,7 @@
 #include <dhcp/dhcp6.h>
 #include <dhcp/pkt6.h>
 #include <user_chk.h>
+#include <user_chk_log.h>
 
 using namespace isc::dhcp;
 using namespace isc::hooks;
@@ -105,36 +106,58 @@ int pkt6_receive(CalloutHandle& handle) {
         handle.getArgument("query6", query);
 
         // Get the MAC to use as the user identifier.
-        OptionPtr opt_mac_ptr = query->getOption(D6O_VENDOR_OPTS);
-
-        //get value from ptr
-
-        // Look for the user in the registry.
-        UserPtr registered_user = user_registry->findUser(*opt_mac);
-
-        /*
-        // Get the DUID to use as the user identifier.
-        OptionPtr opt_duid = query->getOption(D6O_CLIENTID);
-        if (!opt_duid) {
-            std::cout << "DHCP6 query is missing DUID" << std::endl;
-            return (1);
-        }
-        DuidPtr duid = DuidPtr(new DUID(opt_duid->getData()));
-
-        // Store the id we search with so it is available down the road.
-        handle.setContext(query_user_id_label, duid);
-
-        // Look for the user in the registry.
-        UserPtr registered_user = user_registry->findUser(*duid);
-        */
+        //OptionPtr opt_mac_ptr = query->getOption(D6O_VENDOR_OPTS);
+        OptionPtr desc = query->getOption(D6O_VENDOR_OPTS);
         
-        // Store user regardless. Empty user pointer means non-found. It is
-        // cheaper to fetch it and test it, than to use an exception throw.
-        handle.setContext(registered_user_label, registered_user);
+        LOG_INFO(user_chk_logger, "Get enterprise vendor value");
         std::cout << "DHCP UserCheckHook : pkt6_receive user : "
-                  << duid->toText() << " is "
-                  << (registered_user ? " registered" : " not registered")
+                  << "Get enterprise vendor value - "
+                  << desc->toText()
                   << std::endl;
+        
+        if (desc->getData() == "911") { //our vendor ID
+            LOG_INFO(user_chk_logger, "Matched enterprise vendor value");
+            std::cout << "DHCP UserCheckHook : pkt6_receive user : "
+                      << "Matched enterprise vendor value"
+                      << std::endl;
+            
+            OptionPtr option_foo = desc.option_->getOption(1);
+            OptionPtr option_bar = desc.option_->getOption(2);
+            
+            boost::shared_ptr<OptionInt<uint32_t>> option_foo_uint32 = boost::dynamic_pointer_cast<OptionInt<uint32_t>>(option_foo);
+            OptionCustomPtr option_bar_v4 = boost::dynamic_pointer_cast<OptionCustom>(option_bar);
+            isc::dhcp::HWAddr = ;
+            HWAddrPtr hwaddr = ;
+
+            // Look for the user in the registry.
+            //UserPtr registered_user = user_registry->findUser(*opt_mac_ptr);
+            option_foo_uint32->getValue(); //1234
+            UserPtr registered_user = user_registry->findUser(option_bar_v4->readAddress().toText()); //ip
+
+            /*
+            // Get the DUID to use as the user identifier.
+            OptionPtr opt_duid = query->getOption(D6O_CLIENTID);
+            if (!opt_duid) {
+                std::cout << "DHCP6 query is missing DUID" << std::endl;
+                return (1);
+            }
+            DuidPtr duid = DuidPtr(new DUID(opt_duid->getData()));
+
+            // Store the id we search with so it is available down the road.
+            handle.setContext(query_user_id_label, duid);
+
+            // Look for the user in the registry.
+            UserPtr registered_user = user_registry->findUser(*duid);
+            */
+            
+            // Store user regardless. Empty user pointer means non-found. It is
+            // cheaper to fetch it and test it, than to use an exception throw.
+            handle.setContext(registered_user_label, registered_user);
+            std::cout << "DHCP UserCheckHook : pkt6_receive user : "
+                      << duid->toText() << " is "
+                      << (registered_user ? " registered" : " not registered")
+                      << std::endl;
+        }
     } catch (const std::exception& ex) {
         std::cout << "DHCP UserCheckHook : pkt6_receive unexpected error: "
                   << ex.what() << std::endl;
