@@ -107,22 +107,24 @@ int pkt6_receive(CalloutHandle& handle) {
 
         // Get the MAC to use as the user identifier.
         //OptionPtr opt_mac_ptr = query->getOption(D6O_VENDOR_OPTS);
-        OptionPtr desc = query->getOption(D6O_VENDOR_OPTS);
+        OptionPtr opt = query->getOption(D6O_VENDOR_OPTS);
+        boost::shared_ptr<OptionVendor> vendor = boost::dynamic_pointer_cast<OptionVendor>(opt);
         
-        LOG_INFO(user_chk_logger, "Get enterprise vendor value");
+        LOG_INFO(user_chk_logger, "Get enterprise vendor ID");
         std::cout << "DHCP UserCheckHook : pkt6_receive user : "
-                  << "Get enterprise vendor value - "
-                  << desc->toText()
+                  << "Get enterprise vendor ID - "
+                  << opt->toText()
                   << std::endl;
         
-        if (desc->getData() == "911") { //our vendor ID
-            LOG_INFO(user_chk_logger, "Matched enterprise vendor value");
+        //if (opt->toText() == "911") { //our vendor ID
+        if (opt->getData() == "911") { //our vendor ID
+            LOG_INFO(user_chk_logger, "Matched enterprise vendor ID");
             std::cout << "DHCP UserCheckHook : pkt6_receive user : "
-                      << "Matched enterprise vendor value"
+                      << "Matched enterprise vendor ID"
                       << std::endl;
             
-            OptionPtr option_foo = desc.option_->getOption(1);
-            OptionPtr option_bar = desc.option_->getOption(2);
+            OptionPtr option_foo = vendor->getOption(1);
+            OptionPtr option_bar = vendor->getOption(2);
             
             boost::shared_ptr<OptionInt<uint32_t>> option_foo_uint32 = boost::dynamic_pointer_cast<OptionInt<uint32_t>>(option_foo);
             OptionCustomPtr option_bar_v4 = boost::dynamic_pointer_cast<OptionCustom>(option_bar);
