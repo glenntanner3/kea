@@ -13,7 +13,9 @@
 #include <dhcp/pkt6.h>
 #include <user_chk.h>
 #include <user_chk_log.h>
+#include <dhcp/option_vendor.h>
 
+using namespace isc::log;
 using namespace isc::dhcp;
 using namespace isc::hooks;
 using namespace user_chk;
@@ -104,62 +106,35 @@ int pkt6_receive(CalloutHandle& handle) {
         // Fetch the inbound packet.
         Pkt6Ptr query;
         handle.getArgument("query6", query);
-
-        // Get the MAC to use as the user identifier.
-        //OptionPtr opt_mac_ptr = query->getOption(D6O_VENDOR_OPTS);
-        OptionPtr opt = query->getOption(D6O_VENDOR_OPTS);
-        boost::shared_ptr<OptionVendor> vendor = boost::dynamic_pointer_cast<OptionVendor>(opt);
         
-        LOG_INFO(user_chk_logger, "Get enterprise vendor ID");
-        std::cout << "DHCP UserCheckHook : pkt6_receive user : "
-                  << "Get enterprise vendor ID - "
-                  << opt->toText()
-                  << std::endl;
+        OptionVendorPtr option_vendor;
         
-        //if (opt->toText() == "911") { //our vendor ID
-        if (opt->getData() == "911") { //our vendor ID
-            LOG_INFO(user_chk_logger, "Matched enterprise vendor ID");
-            std::cout << "DHCP UserCheckHook : pkt6_receive user : "
-                      << "Matched enterprise vendor ID"
-                      << std::endl;
-            
-            OptionPtr option_foo = vendor->getOption(1);
-            OptionPtr option_bar = vendor->getOption(2);
-            
-            boost::shared_ptr<OptionInt<uint32_t>> option_foo_uint32 = boost::dynamic_pointer_cast<OptionInt<uint32_t>>(option_foo);
-            OptionCustomPtr option_bar_v4 = boost::dynamic_pointer_cast<OptionCustom>(option_bar);
-            isc::dhcp::HWAddr = ;
-            HWAddrPtr hwaddr = ;
-
-            // Look for the user in the registry.
-            //UserPtr registered_user = user_registry->findUser(*opt_mac_ptr);
-            option_foo_uint32->getValue(); //1234
-            UserPtr registered_user = user_registry->findUser(option_bar_v4->readAddress().toText()); //ip
-
-            /*
-            // Get the DUID to use as the user identifier.
-            OptionPtr opt_duid = query->getOption(D6O_CLIENTID);
-            if (!opt_duid) {
-                std::cout << "DHCP6 query is missing DUID" << std::endl;
-                return (1);
+        // Get all vendor option and look for the one with the ISC enterprise id.
+        OptionCollection vendor_options = query->getOptions(D6O_VENDOR_OPTS);
+        for (OptionCollection::const_iterator opt = vendor_options.begin(); opt != vendor_options.end(); ++opt) {
+            option_vendor = boost::dynamic_pointer_cast<OptionVendor>(opt->second);
+            if (option_vendor) {
+                if (option_vendor->getVendorId() == "20974") { //our vendor ID
+                    LOG_DEBUG(user_chk_logger, DBGLVL_TRACE_BASIC, "Matched enterprise vendor ID");
+                    break;
+                }
+                option_vendor.reset();
             }
-            DuidPtr duid = DuidPtr(new DUID(opt_duid->getData()));
-
-            // Store the id we search with so it is available down the road.
-            handle.setContext(query_user_id_label, duid);
-
-            // Look for the user in the registry.
-            UserPtr registered_user = user_registry->findUser(*duid);
-            */
-            
-            // Store user regardless. Empty user pointer means non-found. It is
-            // cheaper to fetch it and test it, than to use an exception throw.
-            handle.setContext(registered_user_label, registered_user);
-            std::cout << "DHCP UserCheckHook : pkt6_receive user : "
-                      << duid->toText() << " is "
-                      << (registered_user ? " registered" : " not registered")
-                      << std::endl;
         }
+        
+        UserPtr registered_user = NULL;
+        
+        if (option_vendor) {
+            OptionPtr option_foo = option_vendor->getOption(1);
+            LOG_DEBUG(user_chk_logger, DBGLVL_TRACE_BASIC, "Value of 1 --> %1").arg(option_foo->toText());
+            
+            registered_user = user_registry->findUser(option_foo->getData());
+        }
+            
+        // Store user regardless. Empty user pointer means non-found. It is
+        // cheaper to fetch it and test it, than to use an exception throw.
+        handle.setContext(registered_user_label, registered_user);
+        LOG_DEBUG(user_chk_logger, DBGLVL_TRACE_BASIC, "%1 is %2").arg(option_foo->toText(), (registered_user ? " registered" : " not registered"));
     } catch (const std::exception& ex) {
         std::cout << "DHCP UserCheckHook : pkt6_receive unexpected error: "
                   << ex.what() << std::endl;
