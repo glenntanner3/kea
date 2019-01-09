@@ -114,6 +114,7 @@ int pkt6_receive(CalloutHandle& handle) {
         for (OptionCollection::const_iterator opt = vendor_options.begin(); opt != vendor_options.end(); ++opt) {
             option_vendor = boost::dynamic_pointer_cast<OptionVendor>(opt->second);
             if (option_vendor) {
+                LOG_DEBUG(user_chk_logger, DBGLVL_TRACE_BASIC, "Enterprise vendor ID --> %1").arg(option_vendor->getVendorId());
                 if (option_vendor->getVendorId() == "20974") { //our vendor ID
                     LOG_DEBUG(user_chk_logger, DBGLVL_TRACE_BASIC, "Matched enterprise vendor ID");
                     break;
@@ -122,13 +123,19 @@ int pkt6_receive(CalloutHandle& handle) {
             }
         }
         
-        UserPtr registered_user = NULL;
+        UserPtr registered_user;
         
         if (option_vendor) {
-            OptionPtr option_foo = option_vendor->getOption(1);
-            LOG_DEBUG(user_chk_logger, DBGLVL_TRACE_BASIC, "Value of 1 --> %1").arg(option_foo->toText());
-            
-            registered_user = user_registry->findUser(option_foo->getData());
+            HWAddrPtr hwaddr = HWAddrPtr(new HWAddr(vendor->getOption(1)->getData()));
+            LOG_DEBUG(user_chk_logger, DBGLVL_TRACE_BASIC, "OPT1 --> %1").arg(hwaddr->toText());
+            handle.setContext(query_user_id_label, hwaddr);
+            registered_user = user_registry->findUser(*hwaddr);
+            /*
+            DuidPtr duid = DuidPtr(new DUID(vendor->getOption(1)->getData()));
+            LOG_DEBUG(user_chk_logger, DBGLVL_TRACE_BASIC, "OPT1 --> %1").arg(duid->toText());
+            handle.setContext(query_user_id_label, duid);
+            registered_user = user_registry->findUser(*duid);
+            */
         }
             
         // Store user regardless. Empty user pointer means non-found. It is

@@ -13,6 +13,7 @@
 #include <dhcp/dhcp6.h>
 #include <dhcp/option_string.h>
 #include <dhcp/option_custom.h>
+#include <dhcp/option_vendor.h>
 #include <dhcp/option6_ia.h>
 #include <dhcp/option6_iaaddr.h>
 #include <dhcp/option6_iaprefix.h>
@@ -166,16 +167,18 @@ int pkt6_send(CalloutHandle& handle) {
             std::cout << "DHCP UserCheckHook : pkt6_send registered_user is: "
                       << registered_user->getUserId() << std::endl;
             // Add the outcome entry to the output file.
-            generate_output_record(UserId::DUID_STR, duid->toText(),
+            //generate_output_record(UserId::DUID_STR, duid->toText(),
                                    addr_str, true);
             add6Options(response, registered_user);
         } else {
+            //decline
+            
             // add default options based
             // then generate not registered output record
             std::cout << "DHCP UserCheckHook : pkt6_send no registered_user"
                       << std::endl;
             // Add the outcome entry to the output file.
-            generate_output_record(UserId::DUID_STR, duid->toText(),
+            //generate_output_record(UserId::DUID_STR, duid->toText(),
                                    addr_str, false);
             add6Options(response, getDefaultUser6());
         }
@@ -275,35 +278,28 @@ void add6Options(Pkt6Ptr& response, const UserPtr& user) {
               << "response has no vendor option to update" << std::endl;
         return;
     }
-
-    /*
-    // If the user defines bootfile, set the option in response.
-    std::string opt_value = user->getProperty("bootfile");
-    if (!opt_value.empty()) {
-        std::cout << "DHCP UserCheckHook : add6Options "
-                  << "adding boot file:" << opt_value << std::endl;
-        add6Option(vendor, DOCSIS3_V6_CONFIG_FILE, opt_value);
+        
+    OptionVendorPtr option_vendor;
+    
+    OptionCollection vendor_options = query->getOptions(D6O_VENDOR_OPTS);
+    for (OptionCollection::const_iterator opt = vendor_options.begin(); opt != vendor_options.end(); ++opt) {
+        option_vendor = boost::dynamic_pointer_cast<OptionVendor>(opt->second);
+        if (option_vendor) {
+            LOG_DEBUG(user_chk_logger, DBGLVL_TRACE_BASIC, "Enterprise vendor ID --> %1").arg(option_vendor->getVendorId());
+            if (option_vendor->getVendorId() == "20974") { //our vendor ID
+                LOG_DEBUG(user_chk_logger, DBGLVL_TRACE_BASIC, "Matched enterprise vendor ID");
+                break;
+            }
+            option_vendor.reset();
+        }
     }
-
-    // If the user defines tftp server, set the option in response.
-    opt_value = user->getProperty("tftp_server");
-    if (!opt_value.empty()) {
-        std::cout << "DHCP UserCheckHook : add6Options "
-                  << "adding tftp server:" << opt_value << std::endl;
-
-        add6Option(vendor, DOCSIS3_V6_TFTP_SERVERS, opt_value);
-    }
-    */
     
     // If the user defines bootfile, set the option in response.
     std::string vxlan = user->getProperty("vxlan");
     std::string dstip = user->getProperty("dstip");
     if (!vxlan.empty() and !dstip.empty()) {
-        std::cout << "DHCP UserCheckHook : add6Options"
-                  << " adding vxlan:" << vxlan
-                  << " adding dstip:" << dstip
-                  << std::endl;
-        add6Option(vendor, D6O_VENDOR_OPTS, "vxlan:"+vxlan+",dstip:"+dstip);
+        //20974
+        add6Option(option_vendor, 3, vxlan+","+dstip);
     }
 
     // add next option here

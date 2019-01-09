@@ -66,7 +66,7 @@ int subnet4_select(CalloutHandle& handle) {
             handle.getArgument("subnet4", subnet);
         } else {
             // Do not provided unregisterd users with an IP
-            handle.setStatus(CalloutHandle::NEXT_STEP_DROP);
+            handle.setStatus(CalloutHandle::NEXT_STEP_SKIP);
             
             //// User is not in the registry, so assign them to the last subnet
             //// in the collection.  By convention we are assuming this is the
